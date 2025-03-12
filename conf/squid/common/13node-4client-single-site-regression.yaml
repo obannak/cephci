@@ -8,7 +8,7 @@ globals:
       name: ceph
       node1:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - _admin
           - installer
@@ -17,7 +17,7 @@ globals:
           - mon
       node2:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - mon
@@ -27,7 +27,7 @@ globals:
         disk-size: 20
       node3:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - mon
@@ -37,7 +37,7 @@ globals:
         disk-size: 20
       node4:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - rgw
@@ -47,7 +47,7 @@ globals:
         disk-size: 20
       node5:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - nfs
@@ -56,7 +56,7 @@ globals:
         disk-size: 20
       node6:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - nfs
@@ -65,7 +65,7 @@ globals:
         disk-size: 20
       node7:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - node-exporter
@@ -75,7 +75,7 @@ globals:
         disk-size: 20
       node8:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - prometheus
@@ -85,7 +85,7 @@ globals:
         disk-size: 20
       node9:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - grafana
@@ -95,7 +95,7 @@ globals:
         disk-size: 20
       node10:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - rgw
@@ -105,7 +105,7 @@ globals:
         disk-size: 20
       node11:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - rgw
@@ -115,7 +115,7 @@ globals:
         disk-size: 20
       node12:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - mon
@@ -125,7 +125,7 @@ globals:
         disk-size: 20
       node13:
         networks:
-          - shared_net_4
+          - provider_net_cci_13
         role:
           - crash
           - mon
@@ -135,21 +135,21 @@ globals:
         disk-size: 20
       node14:
         networks:
-          - shared_net_5
+          - provider_net_cci_14
         role:
           - client
       node15:
         networks:
-          - shared_net_5
+          - provider_net_cci_14
         role:
           - client
       node16:
         networks:
-          - shared_net_15
+          - provider_net_cci_15
         role:
           - client
       node17:
         networks:
-          - shared_net_15
+          - provider_net_cci_15
         role:
           - client
