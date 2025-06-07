@@ -340,6 +340,33 @@ def enable_rhel_rpms(ceph, distro_ver):
 
     ceph.exec_command(sudo=True, cmd=f"subscription-manager release --set {distro_ver}")
 
+    try:
+        ceph.exec_command(
+            sudo=True, cmd=f"subscription-manager release --set {distro_ver}"
+        )
+    except Exception as e:
+        err = str(e).lower()
+    if any(
+        k in err
+        for k in [
+            "system certificates corrupted",
+            "not registered",
+            "invalid identity certificate",
+            "status: unknown",
+            "certificate has expired",
+        ]
+    ):
+        log.warning("Detected subscription issue. Running clean and re-registering.")
+        sm(ceph).clean()
+        if not setup_subscription_manager(ceph, "cdn"):
+            if not setup_subscription_manager(ceph, "stage"):
+                raise SubscriptionManagerError("Re-registration failed.")
+        ceph.exec_command(
+            sudo=True, cmd=f"subscription-manager release --set {distro_ver}"
+        )
+    else:
+        raise
+
     for repo in repos.get(distro_ver[0]):
         ceph.exec_command(
             sudo=True,

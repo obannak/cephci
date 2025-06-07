@@ -218,6 +218,20 @@ class SubscriptionManager(Cli):
             return out[0].strip()
         return out
 
+    def clean(self):
+        """Cleans all local subscription data: entitlements, certs, identity.
+
+        Raises:
+            SubscriptionManagerError: if clean fails.
+        """
+        cmd = f"{self.base_cmd} clean"
+        out = self.execute(sudo=True, cmd=cmd)
+
+        if isinstance(out, tuple) and out[1] != 0:
+            raise SubscriptionManagerError("subscription-manager clean failed")
+
+        return True
+
 
 class Repos(Cli):
     """This module provides CLI interface to perform subscription manager repo operations."""
