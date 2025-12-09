@@ -350,6 +350,16 @@ def setup_installer_node(
     # Configure cephadm ansible inventory hosts
     configure_cephadm_ansible_inventory(nodes)
 
+    # Ensure ansible directory/log exist before running ansible preflight
+    installer.exec_command(
+        sudo=True,
+        cmd=(
+            "mkdir -p /home/cephuser/ansible && "
+            "touch /home/cephuser/ansible/ansible.log && "
+            "chown -R cephuser:cephuser /home/cephuser/ansible"
+        ),
+    )
+
     # Execute cephadm ansible preflight playbook
     exec_cephadm_preflight(installer, build_type, ibm_build, tools_repo)
 
