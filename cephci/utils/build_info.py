@@ -207,6 +207,8 @@ class CephTestManifest:
         else:
             manifest_url += f"redhat/{manifest_file}"
 
+        logger.debug(f"Manifest URL: {manifest_url}")
+
         try:
             data: requests.Response = requests.get(manifest_url, verify=False)
         except requests.RequestException as e:
@@ -216,6 +218,7 @@ class CephTestManifest:
 
         try:
             yml_data: Dict[str, Any] = yaml.safe_load(data.text)
+            logger.debug(f"Manifest data: {yml_data}")
             return yml_data[self.build_type]
         except yaml.YAMLError:
             raise RuntimeError("Unable to process the Ceph QE manifest file")
