@@ -10,6 +10,7 @@ from copy import deepcopy
 from ceph.ceph import Ceph
 from ceph.ceph_admin import CephAdmin
 from ceph.ceph_admin.alert_manager import AlertManager
+from ceph.ceph_admin.cephadm_utils import redeploy_monitoring_services_helper
 from ceph.ceph_admin.cephfs_mirror import CephfsMirror
 from ceph.ceph_admin.client_keyring import ClientKeyring
 from ceph.ceph_admin.common import fetch_method
@@ -163,6 +164,29 @@ def run(ceph_cluster: Ceph, **kwargs) -> int:
         for step in steps:
             cfg = step["config"]
             command = cfg.pop("command")
+            service = cfg.pop("service")
+
+            if (
+                service == "orch"
+                and command == "apply_spec"
+                and any(
+                    spec.get("service_type")
+                    in ["prometheus", "grafana", "alertmanager"]
+                    for spec in cfg.get("specs", [])
+                )
+            ):
+                LOG.info(
+                    "Redeploying monitoring services with correct container images"
+                )
+
+                redeploy_monitoring_services_helper(
+                    cephadm=cephadm,
+                    cluster=ceph_cluster.name,
+                    image_registry=config.get("image_registry"),
+                    specs=cfg.get("specs"),
+                )
+                continue
+
             if command == "shell":
                 cephadm.shell(**cfg)
                 continue
