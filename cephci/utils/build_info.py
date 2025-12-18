@@ -218,10 +218,12 @@ class CephTestManifest:
             yml_data: Dict[str, Any] = yaml.safe_load(data.text)
             build_data = yml_data[self.build_type]
 
-            # Convert image digests from '@sha256:<digest>' format to ':<digest>' format
-            images = build_data.get("images", {})
-            for k, v in images.items():
-                images[k] = v.replace("@sha256:", ":")
+            # Convert image digests from '@sha256:<digest>' format to ':<digest>' format if datacenter is 'eu-de'
+            if self.datacenter == "eu-de":
+                print("======================== Converting image digests for eu-de ==================")
+                images = build_data.get("images", {})
+                for k, v in images.items():
+                    images[k] = v.replace("@sha256:", ":")
 
             return build_data
 
