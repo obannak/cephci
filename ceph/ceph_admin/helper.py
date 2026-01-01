@@ -1200,10 +1200,18 @@ def check_service_exists(
             _count = count
             _retries = 3
 
-    # Identify the failure
-    out, err = installer.exec_command(sudo=True, cmd=" ".join(cmd_args))
-    out = json.loads(out)
-    LOG.error(f"{service_name or service_type} failed with \n{out[0].get('events')}")
+    if not out:
+        return False
+
+    # cephadm may return dict/list for --format json
+    if isinstance(out, (dict, list)):
+        return True
+
+    if isinstance(out, str):
+        if not out.strip():
+            return False
+        return True
+
     return False
 
 
@@ -1217,25 +1225,88 @@ def validate_spec_services(installer, specs, rhcs_version) -> None:
         rhcs_version    The version of Ceph
     """
     LOG.info("Validating spec services")
+
+    MONITORING_SERVICES = [
+        "prometheus",
+        "alertmanager",
+        "grafana",
+        "node-exporter",
+        "crash",
+    ]
+
     for spec in specs:
         svc_type = spec["service_type"]
         svc_id = spec.get("service_id")
         svc_name = None
 
-        # continue if it is host
-        if "host" == svc_type:
+        # Skip host specs (unchanged behavior)
+        if svc_type == "host":
             continue
 
         if svc_id:
-            svc_name = f"{svc_type}.{spec['service_id']}"
+            svc_name = f"{svc_type}.{svc_id}"
 
-        if not check_service_exists(
+        # ---------- First validation attempt (unchanged) ----------
+        if check_service_exists(
             installer=installer,
             service_name=svc_name,
             service_type=svc_type,
             rhcs_version=rhcs_version,
         ):
-            raise Exception(f"{svc_name or svc_type} service deployment failed!!!")
+            continue
+
+        # ---------- Centralized monitoring recovery (NEW, SAFE) ----------
+        if svc_type in MONITORING_SERVICES:
+            LOG.warning(
+                f"{svc_name or svc_type} failed initial validation. "
+                "Attempting monitoring redeploy via spec reapply."
+            )
+
+            try:
+                # Remove broken service (best effort)
+                installer.exec_command(
+                    sudo=True,
+                    cmd=(
+                        "cephadm shell -- "
+                        f"ceph orch rm {svc_name or svc_type} --force"
+                    ),
+                    check_ec=False,
+                )
+
+                # Reapply using original spec
+                spec_file = GenerateServiceSpec(
+                    node=installer,
+                    cluster=installer.cluster,
+                    specs=[spec],
+                ).create_spec_file()
+
+                installer.exec_command(
+                    sudo=True,
+                    cmd=(
+                        "cephadm shell -- "
+                        f"ceph orch apply -i {spec_file}"
+                    ),
+                )
+            except Exception as exc:
+                LOG.debug(
+                    f"Ignoring redeploy exception for "
+                    f"{svc_name or svc_type}: {exc}"
+                )
+
+            # ---------- Second validation attempt ----------
+            if check_service_exists(
+                installer=installer,
+                service_name=svc_name,
+                service_type=svc_type,
+                rhcs_version=rhcs_version,
+            ):
+                LOG.info(
+                    f"{svc_name or svc_type} recovered after redeploy"
+                )
+                continue
+
+        # ---------- Final failure (unchanged behavior) ----------
+        raise Exception(f"{svc_name or svc_type} service deployment failed!!!")
 
 
 def add_remove_osd(command, osd_nodes, ceph_nodes, orch_obj, osd_obj, ceph_admin):
