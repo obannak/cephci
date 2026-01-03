@@ -207,6 +207,7 @@ class CephTestManifest:
         else:
             manifest_url += f"redhat/{manifest_file}"
 
+        logger.debug(f"Downloading the Ceph QE manifest file from {manifest_url}")
         try:
             data: requests.Response = requests.get(manifest_url, verify=False)
         except requests.RequestException as e:
@@ -216,7 +217,7 @@ class CephTestManifest:
 
         try:
             yml_data: Dict[str, Any] = yaml.safe_load(data.text)
-            Log.debug(f"Manifest data retrieved: {yml_data}")
+            logger.debug(f"Manifest data retrieved: {yml_data}")
             build_data = yml_data[self.build_type]
 
             # Convert image digests from '@sha256:<digest>' format to ':<digest>' format if datacenter is 'eu-de'
