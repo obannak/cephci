@@ -216,6 +216,7 @@ class CephTestManifest:
 
         try:
             yml_data: Dict[str, Any] = yaml.safe_load(data.text)
+            Log.debug(f"Manifest data retrieved: {yml_data}")
             build_data = yml_data[self.build_type]
 
             # Convert image digests from '@sha256:<digest>' format to ':<digest>' format if datacenter is 'eu-de'
