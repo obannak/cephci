@@ -79,6 +79,7 @@ globals:
         role:
           - osd
           - rgw
+          - mon
 
       node6:
         role:
