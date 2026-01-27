@@ -20,7 +20,7 @@ tests:
         args:
           mon-ip: node1
           rhcs-version: 8.1
-          release: rc
+          release: "rc"
           platform: rhel-9
           ssh-user: cephuser
           apply-spec:

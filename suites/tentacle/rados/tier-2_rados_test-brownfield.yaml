@@ -24,7 +24,7 @@ tests:
                 verbose: true
               args:
                 rhcs-version: 7.1
-                release: z1     # deploying old build to verify obj snap deletion
+                release: "rc"     # deploying old build to verify obj snap deletion
                 platform: rhel-9
                 mon-ip: node1
                 orphan-initial-daemons: true

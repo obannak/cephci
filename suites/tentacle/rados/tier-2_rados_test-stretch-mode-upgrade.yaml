@@ -24,7 +24,7 @@ tests:
           verbose: true
         args:
           rhcs-version: 7.1
-          release: rc
+          release: "rc"
           platform: rhel-9
           mon-ip: node1
           orphan-initial-daemons: true
