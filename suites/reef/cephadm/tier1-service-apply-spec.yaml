@@ -58,7 +58,7 @@ tests:
         args:
           skip-monitoring-stack: true
           orphan-initial-daemons: true
-          registry-json: registry.redhat.io
+          # registry-json: registry.redhat.io
           custom_image: true
           mon-ip: node1
           fsid: f64f341c-655d-11eb-8778-fa163e914bcc

@@ -25,7 +25,7 @@ tests:
           ssh-user: cephuser
           ssh-public-key: /home/cephuser/.ssh/id_rsa.pub # if ssh-public-key is provided then provide with ssh-user
           ssh-private-key: /home/cephuser/.ssh/id_rsa # ssh-private-key also else validation fails
-          registry-json: registry.redhat.io
+          # registry-json: registry.redhat.io
           custom_image: true
           mon-ip: node1
       destroy-cluster: false
