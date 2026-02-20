@@ -363,6 +363,15 @@ class BootstrapMixin:
         if rhbuild.split("-")[0] in ["5.1", "5.2"]:
             cmd += " --yes-i-know"
 
+        # Remove any existing podman-auth.json so cephadm creates it from current
+        # CLI credentials. Avoids stale auth after registry credential rotation.
+        if registry_url or registry_json or manifest_obj.product == "ibm":
+            self.installer.exec_command(
+                sudo=True,
+                cmd="rm -f /etc/ceph/podman-auth.json",
+                check_ec=False,
+            )
+
         out, err = self.installer.exec_command(
             sudo=True,
             cmd=cmd,
