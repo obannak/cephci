@@ -1,5 +1,6 @@
 """Module that allows QE to interface with cephadm bootstrap CLI."""
 
+import base64
 import json
 import tempfile
 from copy import deepcopy
@@ -24,6 +25,37 @@ __DEFAULT_CEPH_DIR = "/etc/ceph"
 __DEFAULT_CONF_PATH = "/etc/ceph/ceph.conf"
 __DEFAULT_KEYRING_PATH = "/etc/ceph/ceph.client.admin.keyring"
 __DEFAULT_SSH_PATH = "/etc/ceph/ceph.pub"
+__PODMAN_AUTH_PATH = "/etc/ceph/podman-auth.json"
+
+
+def _write_podman_auth_on_node(installer, registry_url: str, ibm_build: bool = False):
+    """
+    Create podman-auth.json from cephci config and write it on the installer node.
+    Ensures cephadm/podman use current credentials and avoids shell/source issues.
+    """
+    build_type = "ibm" if ibm_build else "rh"
+    _config = get_cephci_config()
+    cdn_cred = _config.get(
+        f"{build_type}_registry_credentials", _config["cdn_credentials"]
+    )
+    reg_url = cdn_cred.get("registry", registry_url)
+    username = cdn_cred.get("username") or ""
+    password = cdn_cred.get("password") or ""
+    b64_auth = base64.b64encode(f"{username}:{password}".encode("ascii")).decode(
+        "utf-8"
+    )
+    auth_content = json.dumps({"auths": {reg_url: {"auth": b64_auth}}}, indent=2)
+    installer.exec_command(sudo=True, cmd="mkdir -p /etc/ceph")
+    auth_file = installer.node.remote_file(
+        sudo=True, file_name=__PODMAN_AUTH_PATH, file_mode="w"
+    )
+    auth_file.write(auth_content)
+    auth_file.flush()
+    installer.exec_command(sudo=True, cmd=f"chmod 600 {__PODMAN_AUTH_PATH}")
+    logger.info(
+        "Wrote podman-auth.json on %s from cephci config",
+        installer.node.shortname,
+    )
 
 
 def construct_registry(
@@ -362,6 +394,16 @@ class BootstrapMixin:
         #   should be removed for next 5.x development builds or release.
         if rhbuild.split("-")[0] in ["5.1", "5.2"]:
             cmd += " --yes-i-know"
+
+        # Create podman-auth.json from cephci config on the installer node so
+        # cephadm/podman use current credentials (avoids stale file and shell
+        # quoting issues with password in CLI).
+        if registry_url or registry_json or manifest_obj.product == "ibm":
+            _write_podman_auth_on_node(
+                self.installer,
+                registry_url or "",
+                ibm_build=(manifest_obj.product == "ibm"),
+            )
 
         out, err = self.installer.exec_command(
             sudo=True,
