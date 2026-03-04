@@ -1,6 +1,6 @@
 import time
 
-from cli.exceptions import ConfigError
+from cli.exceptions import AnsiblePlaybookExecutionError, ConfigError
 from cli.ops.cephadm_ansible import (
     autoload_registry_details,
     exec_ceph_config,
@@ -10,6 +10,14 @@ from cli.ops.cephadm_ansible import (
     exec_cephadm_registry_login,
 )
 from cli.utilities.operations import wait_for_osd_daemon_state
+from utility.log import Log
+
+log = Log(__name__)
+
+# Retries for ceph_orch_daemon stop/start: the ansible module validates daemon
+# status with a fixed number of retries; under load status may update slowly.
+CEPH_ORCH_DAEMON_STATE_RETRIES = 3
+CEPH_ORCH_DAEMON_STATE_RETRY_DELAY = 45
 
 
 def run(ceph_cluster, **kwargs):
@@ -76,8 +84,32 @@ def run(ceph_cluster, **kwargs):
             # Explicitly wait for 60 sec
             time.sleep(60)
 
-            # Eexecute `ceph_orch_daemon` module playbook
-            exec_ceph_orch_daemon(installer, playbook, **module_args)
+            # Execute `ceph_orch_daemon` module playbook. For stop/start/restart,
+            # retry in case the module's status validation times out (e.g. "Status
+            # for osd.N isn't reported as expected") while the daemon actually did
+            # change state.
+            state = module_args.get("state")
+            if state in ("stopped", "started", "restarted"):
+                last_error = None
+                for attempt in range(CEPH_ORCH_DAEMON_STATE_RETRIES):
+                    try:
+                        exec_ceph_orch_daemon(installer, playbook, **module_args)
+                        break
+                    except AnsiblePlaybookExecutionError as e:
+                        last_error = e
+                        if attempt < CEPH_ORCH_DAEMON_STATE_RETRIES - 1:
+                            log.info(
+                                "ceph_orch_daemon playbook failed (attempt %s/%s), "
+                                "retrying in %ss",
+                                attempt + 1,
+                                CEPH_ORCH_DAEMON_STATE_RETRIES,
+                                CEPH_ORCH_DAEMON_STATE_RETRY_DELAY,
+                            )
+                            time.sleep(CEPH_ORCH_DAEMON_STATE_RETRY_DELAY)
+                        else:
+                            raise last_error
+            else:
+                exec_ceph_orch_daemon(installer, playbook, **module_args)
 
         elif module == "cephadm_registry_login":
             # Check for registry details

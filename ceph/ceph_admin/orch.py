@@ -134,13 +134,13 @@ class Orch(
         """
         LOG.info("[%s] check for restart after: %s" % (service_name, restart_init_time))
 
-        out, err = self.ls({"base_cmd_args": {"format": "json"}})
+        out, err = self.ps({"base_cmd_args": {"format": "json"}})
         out = loads(out)
-        service = [d for d in out if d.get("service_name") == service_name]
+        service = [d for d in out if d.get("daemon_name") == service_name]
 
-        if service:
-            last_refresh = service[0]["status"]["last_refresh"]
-            last_refresh = parser.parse(last_refresh).replace(tzinfo=None)
+        if service and service[0].get("started"):
+            last_refresh = parser.parse(service[0]["started"]).replace(tzinfo=None)
+
             if last_refresh >= restart_init_time:
                 return True
 
